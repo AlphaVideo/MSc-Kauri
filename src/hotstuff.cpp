@@ -1299,7 +1299,7 @@ void HotStuffBase::tree_scheduler(std::vector<std::tuple<NetAddr, pubkey_bt, uin
         // current_tree_network.set_target(lastCheckedHeight + config.tree_switch_period);
 
     if(warmup_counter == 0) {
-        current_tree_network.set_target(1000)
+        current_tree_network.set_target(1000);
         warmup_counter++;
     }
     else
