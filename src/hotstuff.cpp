@@ -1290,12 +1290,12 @@ void HotStuffBase::tree_scheduler(std::vector<std::tuple<NetAddr, pubkey_bt, uin
     // else
     //     current_tree_network.set_target(lastCheckedHeight + config.tree_switch_period);
 
-    if(warmup_counter < system_trees.size()) {
-        // Do 1 block for each tree in schedule to warmup
-        current_tree_network.set_target(lastCheckedHeight + 1);
-        warmup_counter++;
-    }
-    else
+    // if(warmup_counter < system_trees.size()) {
+    //     // Do 1 block for each tree in schedule to warmup
+    //     current_tree_network.set_target(lastCheckedHeight + 1);
+    //     warmup_counter++;
+    // }
+    // else
         current_tree_network.set_target(lastCheckedHeight + config.tree_switch_period);
 
     HOTSTUFF_LOG_PROTO("%s", std::string(current_tree_network).c_str());
@@ -1402,7 +1402,7 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
         if(pmaker->get_proposer() == get_id()) beat();
 
-        ev_beat_timer.add(0.05);
+        ev_beat_timer.add(0.1);
     });
     ev_beat_timer.add(10);
 

@@ -167,8 +167,8 @@ int main(int argc, char **argv) {
     auto opt_base_timeout = Config::OptValDouble::create(10);
     auto opt_prop_delay = Config::OptValDouble::create(1);
     auto opt_imp_timeout = Config::OptValDouble::create(10);
-    auto opt_nworker = Config::OptValInt::create(2);
-    auto opt_repnworker = Config::OptValInt::create(2);
+    auto opt_nworker = Config::OptValInt::create(3);
+    auto opt_repnworker = Config::OptValInt::create(3);
     auto opt_repburst = Config::OptValInt::create(10000);
     auto opt_clinworker = Config::OptValInt::create(1);
     auto opt_cliburst = Config::OptValInt::create(10000);
@@ -180,8 +180,8 @@ int main(int argc, char **argv) {
     auto opt_piped_latency = Config::OptValInt::create(10); // 10ms by default
     auto opt_async_blocks = Config::OptValInt::create(0); // 0 by default
 
-    auto opt_tree_switch_period = Config::OptValDouble::create(100);
-    auto opt_tree_generation = Config::OptValStr::create("default");
+    auto opt_tree_switch_period = Config::OptValDouble::create(300);
+    auto opt_tree_generation = Config::OptValStr::create("file");
     auto opt_tree_generation_fpath = Config::OptValStr::create("treegen.conf");
 
     config.add_opt("block-size", opt_blk_size, Config::SET_VAL);
