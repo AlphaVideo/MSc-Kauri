@@ -1418,48 +1418,48 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
     });
     ev_beat_timer.add(10);
 
-    ev_check_pending = TimerEvent(ec, [this](TimerEvent &){
-        /*Take care of pending proposals*/
-        while(!pending_proposals.empty()) {
-            auto pending_proposal = std::move(pending_proposals.front());
+    // ev_check_pending = TimerEvent(ec, [this](TimerEvent &){
+    //     /*Take care of pending proposals*/
+    //     while(!pending_proposals.empty()) {
+    //         auto pending_proposal = std::move(pending_proposals.front());
 
-            if(pending_proposal.first.proposal.tid != get_tree_id()) {
-                break;
-            }
+    //         if(pending_proposal.first.proposal.tid != get_tree_id()) {
+    //             break;
+    //         }
 
-            LOG_PROTO("[PROP HANDLER] Popping pending proposal: %s", std::string(pending_proposal.first.proposal).c_str());
-            pending_proposal = std::move(pending_proposals.front());
-            pending_proposals.erase(pending_proposals.begin());
-            auto &pending_prop = pending_proposal.first.proposal;
+    //         LOG_PROTO("[PROP HANDLER] Popping pending proposal: %s", std::string(pending_proposal.first.proposal).c_str());
+    //         pending_proposal = std::move(pending_proposals.front());
+    //         pending_proposals.erase(pending_proposals.begin());
+    //         auto &pending_prop = pending_proposal.first.proposal;
 
-            auto pending_msg_tree = system_trees[pending_prop.tid];
-            auto pending_childPeers = pending_msg_tree.get_childPeers();
+    //         auto pending_msg_tree = system_trees[pending_prop.tid];
+    //         auto pending_childPeers = pending_msg_tree.get_childPeers();
 
-            // if (!pending_childPeers.empty()) {
-            //     LOG_PROTO("[PROP HANDLER] Relaying pending proposal proposal to children in tid=%d", pending_prop.tid);
-            //     MsgPropose relay = MsgPropose(pending_proposal.first.serialized, true);
-            //     for (const PeerId &peerId : pending_childPeers) {
-            //         pn.send_msg(relay, peerId);
-            //     }
-            // }
+    //         // if (!pending_childPeers.empty()) {
+    //         //     LOG_PROTO("[PROP HANDLER] Relaying pending proposal proposal to children in tid=%d", pending_prop.tid);
+    //         //     MsgPropose relay = MsgPropose(pending_proposal.first.serialized, true);
+    //         //     for (const PeerId &peerId : pending_childPeers) {
+    //         //         pn.send_msg(relay, peerId);
+    //         //     }
+    //         // }
 
-            block_t pending_blk = pending_prop.blk;
-            if (!pending_blk){
-                LOG_PROTO("[PROP HANDLER] Pending block is null!");
-                break;
-            }
+    //         block_t pending_blk = pending_prop.blk;
+    //         if (!pending_blk){
+    //             LOG_PROTO("[PROP HANDLER] Pending block is null!");
+    //             break;
+    //         }
 
-            const PeerId &pending_peer = pending_proposal.second->get_peer_id();
+    //         const PeerId &pending_peer = pending_proposal.second->get_peer_id();
 
-            promise::all(std::vector<promise_t>{
-                async_deliver_blk(pending_blk->get_hash(), pending_peer)
-            }).then([this, pending_prop = std::move(pending_prop)]() {
-                on_receive_proposal(pending_prop);
-            });
-        }
-        ev_check_pending.add(1);
-    });
-    ev_check_pending.add(1);
+    //         promise::all(std::vector<promise_t>{
+    //             async_deliver_blk(pending_blk->get_hash(), pending_peer)
+    //         }).then([this, pending_prop = std::move(pending_prop)]() {
+    //             on_receive_proposal(pending_prop);
+    //         });
+    //     }
+    //     ev_check_pending.add(1);
+    // });
+    // ev_check_pending.add(1);
 
 
     // /** Alternative to clients: Locally generated blocks */
