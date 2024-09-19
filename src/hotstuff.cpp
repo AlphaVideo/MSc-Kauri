@@ -1296,7 +1296,15 @@ void HotStuffBase::tree_scheduler(std::vector<std::tuple<NetAddr, pubkey_bt, uin
     //     warmup_counter++;
     // }
     // else
+        // current_tree_network.set_target(lastCheckedHeight + config.tree_switch_period);
+
+    if(warmup_counter == 0) {
+        current_tree_network.set_target(1000)
+        warmup_counter++;
+    }
+    else
         current_tree_network.set_target(lastCheckedHeight + config.tree_switch_period);
+
 
     HOTSTUFF_LOG_PROTO("%s", std::string(current_tree_network).c_str());
     HOTSTUFF_LOG_PROTO("Next tree switch will happen at block %llu.", current_tree_network.get_target());
@@ -1393,16 +1401,20 @@ void HotStuffBase::start(std::vector<std::tuple<NetAddr, pubkey_bt, uint256_t>> 
 
     ev_beat_timer = TimerEvent(ec, [this](TimerEvent &) {
 
-        if(final_buffer.empty()) {
-            for(size_t i = 0; i < blk_size; i++) {
-                uint256_t hash = salticidae::get_hash(i);
-                final_buffer.push_back(hash);
-            }
+        if(pmaker->get_proposer() != get_id()) {
+            ev_beat_timer.add(0.1);
         }
+        else {
+            if(final_buffer.empty()) {
+                for(size_t i = 0; i < blk_size; i++) {
+                    uint256_t hash = salticidae::get_hash(i);
+                    final_buffer.push_back(hash);
+                }
+            }
 
-        if(pmaker->get_proposer() == get_id()) beat();
-
-        ev_beat_timer.add(0.1);
+            beat();
+            ev_beat_timer.add(0.1);
+        }
     });
     ev_beat_timer.add(10);
 
