@@ -10,7 +10,7 @@
              [type, fanout, pipeline-depth, pipeline-lat, latency, bandwidth, block-size] 
              latency and bandwidth parameters deprecated and no longer relevant -->
 
-        <service name="server1" image="kauri" share="false" command="['bls','6','1','1','10','50','500']"/>
+        <service name="server1" image="kauri" share="false" command="['bls','6','3','1','10','50','500']"/>
     </services>
     <bridges>
         <!-- Definition of the network elements (routers and switches) -->

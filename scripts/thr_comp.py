@@ -30,14 +30,13 @@ def str2datetime(s):
 
 def plot_hist(fname, data, labels, window_size, blksize):
     plt.rcParams["figure.figsize"] = (10, 6)
-    plt.xlabel(r"tempo (s)")
+    plt.xlabel(r"time (s)")
     
     if args.blksize is None:
-        plt.ylabel(r"blocos/s")
+        plt.ylabel(r"blocks/s")
     else:
         plt.ylabel(r"tx/s")
 
-    #label_offsets = [0,-0.075,0.075,0.04]
     colors = list(mcolors.TABLEAU_COLORS)
     for i, (x, y, reconfig_x, avg_tx_sec, total, total_time) in enumerate(data):
         color = colors[i]
@@ -50,10 +49,9 @@ def plot_hist(fname, data, labels, window_size, blksize):
         plt.plot(reconfig_x, reconfig_y, 'D', color=color)
         
         plt.axhline(y=(total / total_time), color=color, linestyle='-', linewidth=1)
-        plt.text(142, avg_tx_sec, 'Média=' + str(round(float(avg_tx_sec), 3)), color=color, ha='left', va='bottom', bbox=dict(facecolor='white', alpha=0.75), fontsize=10)
+        plt.text(0, avg_tx_sec, 'Average=' + str(round(float(avg_tx_sec), 3)), color=color, ha='left', va='bottom', bbox=dict(facecolor='white', alpha=0.75), fontsize=10)
 
     plt.xlim(left=0)
-    plt.ylim(bottom=1.5)
     plt.legend()
     plt.savefig(fname)
     plt.show()
@@ -79,8 +77,8 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=str, default="hist.png", required=False)
     parser.add_argument('--files', type=str, nargs='+', required=True)
     parser.add_argument('--labels', type=str, nargs='+', required=False)
-    parser.add_argument('--cutoff', type=float, default=9999, required=False)
-    parser.add_argument('--warmup', type=float, default=0, required=False)
+    parser.add_argument('--cutoffs', type=float, nargs='+', default=[9999], required=False)
+    parser.add_argument('--warmups', type=float, nargs='+', default=[0], required=False)
     parser.add_argument('--moving-average-window', type=int, default=1, required=False)
     args = parser.parse_args()
     commit_pat = re.compile('([^[].*) \[hotstuff proto\] Core deliver(.*)')
@@ -93,7 +91,24 @@ if __name__ == '__main__':
     if blksize is None:
         blksize = 1
 
-    for file in args.files:
+    # Ensure warmups and cutoffs match the number of files
+    if len(args.warmups) == 1:
+        args.warmups = args.warmups * len(args.files)
+    if len(args.cutoffs) == 1:
+        args.cutoffs = args.cutoffs * len(args.files)
+
+    if len(args.warmups) != len(args.files):
+        print("Error: The number of warmup values does not match the number of files.")
+        sys.exit(1)
+
+    if len(args.cutoffs) != len(args.files):
+        print("Error: The number of cutoff values does not match the number of files.")
+        sys.exit(1)
+
+    for i, file in enumerate(args.files):
+        warmup = args.warmups[i]
+        cutoff = args.cutoffs[i]
+
         timestamps = []
         rcf_timestamps = []
         values = []
@@ -112,7 +127,7 @@ if __name__ == '__main__':
         timestamps.sort()
         rcf_timestamps.sort()
 
-        timestamps = [ts for ts in timestamps if ts > (timestamps[0] + timedelta(seconds=args.warmup))]
+        timestamps = [ts for ts in timestamps if ts > (timestamps[0] + timedelta(seconds=warmup))]
         rcf_timestamps = [ts for ts in rcf_timestamps if ts > timestamps[0]]
 
         start_time = timestamps[0]
@@ -128,7 +143,7 @@ if __name__ == '__main__':
         for timestamp in timestamps:
             if begin_time is None:
                 begin_time = timestamp
-                cutoff_time = begin_time + timedelta(seconds=args.cutoff)
+                cutoff_time = begin_time + timedelta(seconds=cutoff)
 
             if timestamp > cutoff_time:
                 break
@@ -155,7 +170,6 @@ if __name__ == '__main__':
             if rcf_timestamp > cutoff_time:
                 break
             elapsed_time = (rcf_timestamp - start_time).total_seconds()
-            #reconfig_x.append(find_nearest(x, elapsed_time))
             reconfig_x.append(elapsed_time)
 
         moving_average_window = args.moving_average_window

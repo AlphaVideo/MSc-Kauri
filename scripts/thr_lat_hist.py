@@ -49,6 +49,8 @@ def plot_hist(fname, x, y, reconfig_x, total, total_time, avg_tx_sec, lat_x, lat
     ax1.plot(x, y, marker='o', markersize=3.5, label='bloco/s')
     ax1.set_xlim(left=0)
     ax1.set_ylim(bottom=0)
+    #ax1.set_ylim(top=6)
+
 
     # Reconfiguration markers for first subplot
     interp_func = interp1d(x, y, kind='linear', fill_value='extrapolate')
