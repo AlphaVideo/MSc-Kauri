@@ -1,17 +1,13 @@
-## Kauri
+# Rotating Kauri
 
 
 Kauri is a BFT communication abstraction that leverages dissemination/aggregation trees for load balancing and scalability while avoiding the main limitations of previous tree-based solutions, namely, poor throughput due to additional round latency and the collaps eof the tree to a star even in runs with few faults
 while at the same time avoiding the bottleneck of star based solutions.
 
-### Paper
+This version enables the original Kauri (https://github.com/Raycoms/Kauri-Public) to instead take on a rotating leader approach with an optimised reconfiguration process.
 
-This repo includes the prototype implementation evaluated in our 
-*Kauri: Scalable BFT Consensus with PipelinedTree-Based Dissemination and Aggregation* paper.
 
-Which will be published and presented at SOSP (https://sosp2021.mpi-sws.org/cfp.html)
-
-### Features
+## Features
 
 Kauri extends the publicly available implementation of HotStuff (https://github.com/hot-stuff/libhotstuff) with the following additions:
 
@@ -21,28 +17,56 @@ Kauri extends the publicly available implementation of HotStuff (https://github.
 
 - Extra Pipelining: Additional pipelining allows to offset the inherent latency cost of trees, allowing the system to perform significantly better even in high latency settings.
 
-### Run Kauri
+Additionally, this rotating leader version of Kauri has the following properties:
 
-Disclaimer: The project is a prototype that was developed for the submission to SOSP. As such, it not production ready and still a work in progress considering certain system conditions.
-At the moment only bls signatures are supported. To run HotStuff with libsec signatures, this can be done by running vanilla Hotstuff at https://github.com/hot-stuff/libhotstuff.
+- The schedule of trees to be used in the rotating leader policy can be fed by a file or can be set to be the baseline default schedule, where every node is the leader of a different tree.
+
+- The reconfiguration process overlaps part of the pipeline work during the transition between trees. All messages are now identified in regards to their relevant tree.
+
+- The system revamps some hardcoded aspects of the original prototype, such as the DummyPacemaker which naively removed the old leader from the execution upon failure and didn't preserve internal state.
+
+## Run Kauri
+
+Disclaimer: As was with the original Kauri, this project is not production ready and is still a work in progress considering certain system conditions.
 
 #### Preliminary Setup
 
-Building Kauri is very simple and only a couple of simple steps are necessary.
-While Kauri can be run completely local on a single machine, we suggest running at most 20 processes per physical machine as depending on the configuration processes will start interfering with eachother (i.e 5 machines for 100 processes).
-
 Make sure that Docker Version "20.10.5" or above is installed. Older Docker Versions won't work as they does not support adjusting network privilidges.
 
-#### Docker Setup
+The project can be ran in two different ways: by locally compiling the project and then afterwards transferring the necessary files to the docker swarm containers (faster for development but requires more prep-work) or by pulling the entire repository and compiling everything from scratch remotely in each container (easier to deploy but a lot slower).
 
-First, checkout all the necessary code on all the host machines through
+### Local Compilation
+
+First, make sure you have all the required packages installed and updated.
 
 ```
-git clone https://github.com/Raycoms/Kauri-Public.git
-cd Kauri-Public/runkauri
+sudo apt-get update
+sudo apt-get upgrade
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install git gcc g++ make cmake libuv1-dev libssl-dev libsodium-dev autoconf libnet1-dev libtool pastebinit python3 bash gdb dnsutils nano inetutils-ping net-tools sudo iproute2 w3m htop pip
 ```
 
-Build the Docker Images with:
+Then, install GMP:
+
+```
+git clone https://github.com/aixoss/gmp 
+cd gmp
+sudo ./configure
+sudo make install
+```
+
+Finally, do the first compilation with:
+
+```
+cd ..
+git clone git@github.com:AlphaVideo/MSc-Kauri.git
+cd MSc-Kauri
+git submodule update --init --recursive
+git submodule update --recursive --remote
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED=ON -DHOTSTUFF_PROTO_LOG=ON -DHOTSTUFF_NORMAL_LOG=ON
+make
+```
+
+Afterwards, build the Docker Images with the Dockerfile on the project root folder:
 
 ```
 docker build -t kauri .
@@ -80,43 +104,78 @@ On the same machine, setup a docker network with:
 docker network create --driver=overlay --subnet=10.1.0.0/16 kauri_network
 ```
 
+### Remote Container Compilation
+
+Simply clone the repository and build the Docker images using the Dockerfile in the ```runkauri``` folder.
+Please edit and ensure that ```runkauri/Dockerfile``` and ```runkauri/server.sh``` are pointing towards a public version of this project repo and also to an existing branch in said repository.
+
+The remainder of the setup logic follows the **Local Compile** section starting in the docker build command.
+
 #### Run Experiments
 
-To run and configure experiments we first take a look at the "experiments" file.
+To run and configure experiments we first take a look at the "experiments" file inside the ```runkauri``` directory.
 
 ```
 # type, fanout pipeline-depth pipeline-lat latency bandwidth
 ['bls','10','6','10','100','25']
-# HotStuff has fanout = N
-['bls','100','0','10','100','25']
 ```
-Each of the lines represents an experiment, given a specific fanout, pipelining depth, latency and bandwidth.
-By default, the number of nodes is 100.
+Each of the lines represents an experiment, given a specific fanout, pipelining depth, latency and bandwidth. Change these in accordance to your needs.
 
-To increase the number of nodes, enter the kauri.yaml file and adjust the number of replicas.
-At the given moment, we seperated the replicas into two groups: Potential Internal Nodes and Leaf Nodes.
-As such, for 100 nodes, considering a fanout of 10, there are 11 internal nodes (server1) and 89 remaining nodes (server).
-This helps to balance internal nodes more equally over the different physical machines to reduce potential interference.
+By default, the system will rotate alongside the baseline schedule every 100 blocks. To alter the rotating leader schedule, edit the file ```treegen.conf``` in the root folder with the desired trees. Each line is a different tree, in order, for the schedule. Make sure that the amount of nodes is the same as replicas being deployed!
 
-Note: At the given moment, only the 'bls' mode is supported.
-
-Finally, to run the experiments, simply run:
-
+Afterwards, in ```èxamples/hotstuff_app```, change the value from
 ```
-./runexperiment.sh
+auto opt_tree_generation = Config::OptValStr::create("default");
+```
+to
+```
+auto opt_tree_generation = Config::OptValStr::create("file");
 ```
 
-This will run 5 instances of each of the setups defined in the "experiments" file.
+The block duration the schedule trees can also be changed in the "opt_tree_switch_period" parameter above this one. Don't forget to compile and rebuild the docker image (local compilation). In the case of a remote compilation, push the changes into the repository before rebuilding the docker images.
 
-
-#### Interpretation of Results
-
-The above script will result in a regular output similar to:
+Edit or create an experiments file in accordance to your preferences. Then, in the script ```test.sh```, change the experiments file to your liking and simply run the script:
 
 ```
-2021-08-17 14:14:43.546142 [hotstuff proto] x now state: <hotstuff hqc=affd30ca8f hqc.height=2700 b_lock=22365a13f8 b_exec=63c209503b vheight=27xx tails=1>
+./test.sh
 ```
 
-Where 'hqc.height=2700' presents the last finalized block. Considering the 5 minute interval, that results in 2700/300 blocks per second.
-Considering the default of 1000 transactions pr block, that results in `2700/300*1000 = 9000` ops per second.
+ It will create an output folder called logs with all every replicas' execution log (once the system is done running).
 
+#### Run Experiments (w/ Kollaps)
+
+To logic to run the project with Kollaps is similar to before, except the command to define system properties is fed into a topology .xml file and it is the user manually deploying the system and initiating it with Kollaps' dashboard.
+
+Make sure you install Kollaps following the guide on their website (https://kollaps.dev/installation.html) and then simply create a topology to your liking. Several examples can be found in the directory ```runkauri/kollaps```.
+
+With the desired topology, run the command:
+
+```
+./KollapsDeploymentGenerator <topology_name>.xml -s kauri-kollaps.yaml
+```
+
+And then afterwards deploy the topology with:
+
+```
+docker stack deploy -c kauri-kollaps.yaml kauriservice
+```
+
+When everything is done deploying, start the experiment with Kollaps' dashboard (e.g w3m 127.0.0.1:8080) and at any time fetch the execution logs by running the script ```runkauri/get_test_outputs.sh```.
+
+### Visualizing Results
+
+We provide a script to graph and compare the throughput of different executions (```scripts/thr_comp.py```).
+
+Install the required python packages and execute in the style of:
+
+```
+python thr_comp.py --window-size 2 --moving-average-window 10 --output <output_path> --files <all execution txt files in order> --labels <labels for the execution txt files in order> --warmups <warmup period for the execution txt files in order> --cutoffs <cooldown cutoff for the execution txt files in order>
+```
+
+Window size dictates how the grapher batches the throughput (number of points in the x-axis) and the moving average window dictates the intensity of filter pass for graph readibility.
+
+An example of the grapher being used would be:
+
+```
+python thr_comp.py --window-size 2 --moving-average-window 10 --output case1.png --files case1.1.txt case1.2.txt case1.3.txt --labels "h=3" "h=5" "h=2 (HotStuff)" --warmups 110 110 110 --cutoffs 145 145 145
+```
