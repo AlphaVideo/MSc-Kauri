@@ -144,7 +144,7 @@ Edit or create an experiments file in accordance to your preferences. Then, in t
 
 #### Run Experiments (w/ Kollaps)
 
-To logic to run the project with Kollaps is similar to before, except the command to define system properties is fed into a topology .xml file and it is the user manually deploying the system and initiating it with Kollaps' dashboard.
+The logic to run the project with Kollaps is similar to without, except that instead of an experiments file, system properties are defined in a topology .xml file. It is then the user that manually deploys the system and initiates it with Kollaps' dashboard.
 
 Make sure you install Kollaps following the guide on their website (https://kollaps.dev/installation.html) and then simply create a topology to your liking. Several examples can be found in the directory ```runkauri/kollaps```.
 
