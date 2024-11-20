@@ -31,7 +31,7 @@ Disclaimer: As was with the original Kauri, this project is not production ready
 
 #### Preliminary Setup
 
-Make sure that Docker Version "20.10.5" or above is installed. Older Docker Versions won't work as they does not support adjusting network privilidges.
+Make sure that Docker Version "20.10.5" or above is installed. Older Docker Versions won't work as they does not support adjusting network privileges.
 
 The project can be ran in two different ways: by locally compiling the project and then afterwards transferring the necessary files to the docker swarm containers (faster for development but requires more prep-work) or by pulling the entire repository and compiling everything from scratch remotely in each container (easier to deploy but a lot slower).
 
@@ -123,7 +123,7 @@ Each of the lines represents an experiment, given a specific fanout, pipelining 
 
 By default, the system will rotate alongside the baseline schedule every 100 blocks. To alter the rotating leader schedule, edit the file ```treegen.conf``` in the root folder with the desired trees. Each line is a different tree, in order, for the schedule. Make sure that the amount of nodes is the same as replicas being deployed!
 
-Afterwards, in ```èxamples/hotstuff_app```, change the value from
+Afterwards, in ```examples/hotstuff_app```, change the value from
 ```
 auto opt_tree_generation = Config::OptValStr::create("default");
 ```
@@ -134,13 +134,13 @@ auto opt_tree_generation = Config::OptValStr::create("file");
 
 The block duration the schedule trees can also be changed in the "opt_tree_switch_period" parameter above this one. Don't forget to compile and rebuild the docker image (local compilation). In the case of a remote compilation, push the changes into the repository before rebuilding the docker images.
 
-Edit or create an experiments file in accordance to your preferences. Then, in the script ```test.sh```, change the experiments file to your liking and simply run the script:
+Edit or create an experiments file in accordance to your preferences. Then, in the script ```test.sh```, change the experiments file path to your liking and simply run the script:
 
 ```
 ./test.sh
 ```
 
- It will create an output folder called logs with all every replicas' execution log (once the system is done running).
+ It will create an output folder called logs with every replica's execution log (once the system is done running).
 
 #### Run Experiments (w/ Kollaps)
 
