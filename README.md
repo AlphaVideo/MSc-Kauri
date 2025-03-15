@@ -1,4 +1,4 @@
-# Rotating Kauri
+# Dynamic Trees for Byzantine Consensus Protocols - Rotating Kauri
 
 
 Kauri is a BFT communication abstraction that leverages dissemination/aggregation trees for load balancing and scalability while avoiding the main limitations of previous tree-based solutions, namely, poor throughput due to additional round latency and the collaps eof the tree to a star even in runs with few faults
